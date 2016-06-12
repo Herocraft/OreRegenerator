@@ -15,9 +15,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
 
-import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
-import com.sk89q.worldguard.protection.flags.StateFlag;
-
 public class EventListener implements Listener{
 	private OreRegenerator plugin;
 	public EventListener(OreRegenerator plugin){
@@ -34,19 +31,8 @@ public class EventListener implements Listener{
 		Set<String> delays = plugin.getConfig().getConfigurationSection("delays").getKeys(false);
 		for(String i:delays){
 			if(Material.valueOf(i.toUpperCase()) == mat){
-				if(plugin.getConfig().getString("mode").equalsIgnoreCase("flag")){
-					WorldGuardPlugin wgp = this.plugin.getWG();
-					StateFlag.State state = (StateFlag.State)wgp.getRegionManager(bl.getWorld()).getApplicableRegions(bl.getLocation()).getFlag(OreRegenerator.FLAG_REGENORES);
-					if(state == StateFlag.State.ALLOW && state != null){
-						int delay = plugin.getConfig().getInt("delays."+i+".delay");
-						plugin.sql.insertBlock(i, (int) bl.getData(), bl.getX(), bl.getY(), bl.getZ(), bl.getWorld().getName(), delay);
-						if(plugin.getConfig().contains("delays."+bl.getType().name()+".empty")){
-							Material type = bl.getType();
-							setBlock(bl, Material.valueOf(plugin.getConfig().getString("delays."+type.name()+".empty").toUpperCase()));
-						}else{
-							setBlock(bl, Material.valueOf(plugin.getConfig().getString("empty").toUpperCase()));
-						}
-					}
+				if(plugin.getFlags() != null && plugin.getConfig().getString("mode").equalsIgnoreCase("flag")){
+					plugin.getFlags().handle(i, bl);
 				}else{
 					int delay = plugin.getConfig().getInt("delays."+i+".delay");
 					plugin.sql.insertBlock(i, (int) bl.getData(), bl.getX(), bl.getY(), bl.getZ(), bl.getWorld().getName(), delay);

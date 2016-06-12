@@ -127,44 +127,38 @@ public class SQLManager {
 	public void check(){
 		try{
 			PreparedStatement sql1 = connection.prepareStatement("SELECT * FROM `OreRegen-Blocks`;");
-			final ResultSet rs1 = sql1.executeQuery();
+			ResultSet rs1 = sql1.executeQuery();
 			while(rs1.next()){
 				PreparedStatement sql3 = connection.prepareStatement("UPDATE `OreRegen-Blocks` SET `respawntime`=? WHERE `id`=?;");
 				sql3.setInt(1, rs1.getInt("respawntime") - plugin.getConfig().getInt("interval"));
 				sql3.setInt(2, rs1.getInt("id"));
 				sql3.executeUpdate();
-				if(rs1.getInt("respawntime") - plugin.getConfig().getInt("interval") <= 0){
-					new BukkitRunnable() {
-						@Override
-						public void run() {
-							Location loc = null;
-							try {
-								loc = new Location(Bukkit.getWorld(rs1.getString("world")), rs1.getInt("x"), rs1.getInt("y"), rs1.getInt("z"));
-							} catch (SQLException e2) {
-								e2.printStackTrace();
-							}
-							if(loc != null) {
-								Block bl = loc.getBlock();
-								try {
-									if(bl.getType() == Material.valueOf(plugin.getConfig().getString("empty").toUpperCase()) || bl.getType() == Material.valueOf(plugin.getConfig().getString("delays." + rs1.getString("material").toUpperCase() + ".empty").toUpperCase())){
-										try {
-											bl.setType(Material.valueOf(rs1.getString("material").toUpperCase()));
-										} catch (SQLException e1) {
-											e1.printStackTrace();
-										}
-										try {
-											bl.setData((byte) rs1.getInt("data"));
-										} catch (SQLException e) {
-											e.printStackTrace();
-										}
+				if(rs1.getInt("respawntime") - plugin.getConfig().getInt("interval") <= 0) {
+					try {
+						final String world = rs1.getString("world");
+						final String material = rs1.getString("material");
+						final int x = rs1.getInt("x");
+						final int y = rs1.getInt("y");
+						final int z = rs1.getInt("z");		
+						final int data = rs1.getInt("data");				
+						new BukkitRunnable() {
+							@Override
+							public void run() {
+								Location loc =  new Location(Bukkit.getWorld(world), x, y, z);
+								if(loc != null && loc.getWorld() != null) {
+									Block bl = loc.getBlock();
+									if(bl != null && bl.getType() == Material.valueOf(plugin.getConfig().getString("empty").toUpperCase()) || bl.getType() == Material.valueOf(plugin.getConfig().getString("delays." + material.toUpperCase() + ".empty").toUpperCase())){
+										bl.setType(Material.valueOf(material.toUpperCase()));
+										bl.setData((byte) data);
 									}
-								} catch (SQLException e) {
-									e.printStackTrace();
+	
 								}
 							}
-						}
-					}.runTask(plugin);
-					this.removeItem(rs1.getInt("id"));
+						}.runTask(plugin);
+						this.removeItem(rs1.getInt("id"));
+					} catch(SQLException e) {
+						e.printStackTrace();
+					}
 				}
 				sql3.close();
 			}
