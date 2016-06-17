@@ -2,18 +2,18 @@ package me.steffansk1997.OreRegenerator;
 
 import java.util.Set;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitScheduler;
 
 public class EventListener implements Listener{
 	private OreRegenerator plugin;
@@ -21,7 +21,7 @@ public class EventListener implements Listener{
 		this.plugin = plugin;
 	}
 	@SuppressWarnings("deprecation")
-	@EventHandler
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onBlockBreak(BlockBreakEvent e){
 		if(!plugin.getConfig().getBoolean("creative") && e.getPlayer().getGameMode() == GameMode.CREATIVE){
 			return;
@@ -49,7 +49,7 @@ public class EventListener implements Listener{
 	@EventHandler
 	public void onRightClick(final PlayerInteractEvent e){
 		if(plugin.getConfig().getBoolean("right-click-message")){
-			if(e.getAction().equals(Action.RIGHT_CLICK_BLOCK)){
+			if(e.getHand() == EquipmentSlot.HAND && e.getAction().equals(Action.RIGHT_CLICK_BLOCK)){
 				new BukkitRunnable() {
 					@Override 
 					public void run() {
@@ -74,12 +74,11 @@ public class EventListener implements Listener{
 		return hrs + mns + seco;
 	}
 	public void setBlock(final Block bl, final Material m){
-        BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
-        scheduler.scheduleSyncDelayedTask(plugin, new Runnable() {
+        new BukkitRunnable() {
             @Override
             public void run() {
                 bl.setType(m);
             }
-        }, 1L);
+        }.runTask(plugin);
     }
 }
