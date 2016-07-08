@@ -12,6 +12,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -33,13 +34,13 @@ public class EventListener implements Listener{
 			if(Material.valueOf(i.toUpperCase()) == mat){
 				if(plugin.getFlags() != null && plugin.getConfig().getString("mode").equalsIgnoreCase("flag")){
 					plugin.getFlags().handle(i, bl);
-				}else{
+				}else {
 					int delay = plugin.getConfig().getInt("delays."+i+".delay");
 					plugin.sql.insertBlock(i, (int) bl.getData(), bl.getX(), bl.getY(), bl.getZ(), bl.getWorld().getName(), delay);
 					if(plugin.getConfig().contains("delays."+bl.getType().name()+".empty")){
 						Material type = bl.getType();
 						setBlock(bl, Material.valueOf(plugin.getConfig().getString("delays."+type.name()+".empty").toUpperCase()));
-					}else{
+					} else{
 						setBlock(bl, Material.valueOf(plugin.getConfig().getString("empty").toUpperCase()));
 					}
 				}
@@ -47,9 +48,29 @@ public class EventListener implements Listener{
 		}
 	}
 	@EventHandler
-	public void onRightClick(final PlayerInteractEvent e){
-		if(plugin.getConfig().getBoolean("right-click-message")){
-			if(e.getHand() == EquipmentSlot.HAND && e.getAction().equals(Action.RIGHT_CLICK_BLOCK)){
+	public void onQuit(PlayerQuitEvent e) {
+		// TODO
+	}
+	@EventHandler
+	public void onRightClick(final PlayerInteractEvent e) {
+		if(e.getClickedBlock() == null) return;
+		if(e.getHand() == EquipmentSlot.HAND && e.getAction().equals(Action.RIGHT_CLICK_BLOCK)){
+			if(plugin.getConfig().getBoolean("right-click-message")) {
+				boolean found = false;
+				for(String block: plugin.getConfig().getConfigurationSection("delays").getKeys(false)) {
+					String empty = plugin.getConfig().getString("delays." + block + ".empty");
+					if(empty == null) continue;
+					try {
+						Material m = Material.valueOf(empty);
+						if(e.getClickedBlock().getType() == m) {
+							found = true;
+							break;
+						}
+					} catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+				if(!found) return;
 				new BukkitRunnable() {
 					@Override 
 					public void run() {
